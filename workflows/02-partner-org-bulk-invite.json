@@ -1,0 +1,129 @@
+{
+  "name": "USN — Workflow 2 — Partner Org Bulk Invite (Auto-Approval)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "partner-invite",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "wf2-webhook",
+      "name": "Webhook — Partner Invite",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "partner-invite"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "application": "appXXXXXXXXXXXXXX",
+        "table": "Members",
+        "options": {},
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Name",
+              "fieldValue": "={{ $json.student_name }}"
+            },
+            {
+              "fieldName": "Email",
+              "fieldValue": "={{ $json.student_email }}"
+            },
+            {
+              "fieldName": "Partner Org",
+              "fieldValue": "={{ $json.partner_org }}"
+            },
+            {
+              "fieldName": "Class Designation",
+              "fieldValue": "={{ $json.class_designation }}"
+            },
+            {
+              "fieldName": "Status",
+              "fieldValue": "Invited"
+            },
+            {
+              "fieldName": "Signup Token",
+              "fieldValue": "={{ $json.signup_token }}"
+            },
+            {
+              "fieldName": "Expires At",
+              "fieldValue": "={{ $json.expires_at }}"
+            }
+          ]
+        }
+      },
+      "id": "wf2-airtable",
+      "name": "Airtable — Create Member Record",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $('Webhook — Partner Invite').item.json.student_email }}",
+        "subject": "You've Been Accepted to United Scholars Network",
+        "emailType": "text",
+        "text": "Hi {{ $('Webhook — Partner Invite').item.json.student_name }},\n\nCongratulations. You have been selected to join United Scholars Network as a member of the {{ $('Webhook — Partner Invite').item.json.class_designation }} through our partnership with {{ $('Webhook — Partner Invite').item.json.partner_org }}.\n\nUnited Scholars Network is a selective professional network for high-achieving high school students in South Florida. As a member, you will have access to curated professional opportunities, a vetted peer network, and structured events designed to accelerate your career trajectory.\n\nTo activate your membership, click the link below and set up your account:\n\n{{ $('Webhook — Partner Invite').item.json.signup_url }}\n\nThis link expires in 14 days. If it expires before you activate, contact us and we will send a new one.\n\nWelcome aboard.\n\nUnited Scholars Network\nmembership@unitedscholarsnetwork.org",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf2-email",
+      "name": "Send Email — Partner Acceptance",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [750, 300],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Partner Invite": {
+      "main": [
+        [
+          {
+            "node": "Airtable — Create Member Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable — Create Member Record": {
+      "main": [
+        [
+          {
+            "node": "Send Email — Partner Acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "USN",
+      "id": "usn-tag"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "name": "USN — Workflow 4 — Application Rejected",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "application-rejected",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "wf4-webhook",
+      "name": "Webhook — Application Rejected",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "application-rejected"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "application": "appXXXXXXXXXXXXXX",
+        "table": "Applications",
+        "id": "={{ $json.airtable_record_id }}",
+        "options": {},
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Status",
+              "fieldValue": "Rejected"
+            }
+          ]
+        }
+      },
+      "id": "wf4-airtable",
+      "name": "Airtable — Update Status to Rejected",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $('Webhook — Application Rejected').item.json.applicant_email }}",
+        "subject": "United Scholars Network — Application Update",
+        "emailType": "text",
+        "text": "Hi {{ $('Webhook — Application Rejected').item.json.applicant_name }},\n\nThank you for your interest in United Scholars Network. After careful review, we are unable to offer you membership at this time.\n\n{{ $('Webhook — Application Rejected').item.json.rejection_note }}\n\nWe encourage you to apply again during our next admissions cycle. If you have questions, reply to this email.\n\nUnited Scholars Network\nmembership@unitedscholarsnetwork.org",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf4-email",
+      "name": "Send Email — Rejection",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [750, 300],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Application Rejected": {
+      "main": [
+        [
+          {
+            "node": "Airtable — Update Status to Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable — Update Status to Rejected": {
+      "main": [
+        [
+          {
+            "node": "Send Email — Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "USN",
+      "id": "usn-tag"
+    }
+  ]
+}

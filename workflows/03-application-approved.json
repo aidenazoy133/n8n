@@ -1,0 +1,106 @@
+{
+  "name": "USN — Workflow 3 — Open Application Approved",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "application-approved",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "wf3-webhook",
+      "name": "Webhook — Application Approved",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "application-approved"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "application": "appXXXXXXXXXXXXXX",
+        "table": "Applications",
+        "id": "={{ $json.airtable_record_id }}",
+        "options": {},
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "Status",
+              "fieldValue": "Accepted"
+            }
+          ]
+        }
+      },
+      "id": "wf3-airtable",
+      "name": "Airtable — Update Status to Accepted",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $('Webhook — Application Approved').item.json.applicant_email }}",
+        "subject": "You've Been Accepted to United Scholars Network",
+        "emailType": "text",
+        "text": "Hi {{ $('Webhook — Application Approved').item.json.applicant_name }},\n\nCongratulations. After reviewing your application, we are pleased to offer you membership in United Scholars Network as a member of the {{ $('Webhook — Application Approved').item.json.class_designation }}.\n\nUnited Scholars Network is a selective professional network for high-achieving high school students in South Florida. As a member, you will have access to curated professional opportunities, a vetted peer network, and structured events designed to accelerate your career trajectory.\n\nTo activate your membership, click the link below and set up your account:\n\n{{ $('Webhook — Application Approved').item.json.signup_url }}\n\nThis link expires in 14 days. If it expires before you activate, contact us and we will send a new one.\n\nWelcome aboard.\n\nUnited Scholars Network\nmembership@unitedscholarsnetwork.org",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf3-email",
+      "name": "Send Email — Acceptance",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [750, 300],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Application Approved": {
+      "main": [
+        [
+          {
+            "node": "Airtable — Update Status to Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable — Update Status to Accepted": {
+      "main": [
+        [
+          {
+            "node": "Send Email — Acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "USN",
+      "id": "usn-tag"
+    }
+  ]
+}

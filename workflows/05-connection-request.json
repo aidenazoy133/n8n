@@ -1,0 +1,96 @@
+{
+  "name": "USN — Workflow 5 — Connection Request",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "connection-request",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "wf5-webhook",
+      "name": "Webhook — Connection Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "connection-request"
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $('Webhook — Connection Request').item.json.recipient_email }}",
+        "subject": "={{ $('Webhook — Connection Request').item.json.requester_name }} wants to connect with you on USN",
+        "emailType": "text",
+        "text": "Hi {{ $('Webhook — Connection Request').item.json.recipient_name }},\n\n{{ $('Webhook — Connection Request').item.json.requester_name }}, a {{ $('Webhook — Connection Request').item.json.requester_track }} member from {{ $('Webhook — Connection Request').item.json.requester_school }}, would like to connect with you through United Scholars Network.\n\nYou can reach them at {{ $('Webhook — Connection Request').item.json.requester_email }}.\n\nUnited Scholars Network",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf5-email-recipient",
+      "name": "Send Email — To Recipient",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [550, 200],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $('Webhook — Connection Request').item.json.requester_email }}",
+        "subject": "Your connection request to {{ $('Webhook — Connection Request').item.json.recipient_name }}",
+        "emailType": "text",
+        "text": "Hi {{ $('Webhook — Connection Request').item.json.requester_name }},\n\nYour connection request has been sent. {{ $('Webhook — Connection Request').item.json.recipient_name }} is a {{ $('Webhook — Connection Request').item.json.recipient_track }} member from {{ $('Webhook — Connection Request').item.json.recipient_school }}.\n\nYou can reach them at {{ $('Webhook — Connection Request').item.json.recipient_email }}.\n\nUnited Scholars Network",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf5-email-requester",
+      "name": "Send Email — To Requester",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [550, 450],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Connection Request": {
+      "main": [
+        [
+          {
+            "node": "Send Email — To Recipient",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email — To Requester",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "USN",
+      "id": "usn-tag"
+    }
+  ]
+}

@@ -1,0 +1,271 @@
+{
+  "name": "USN — Workflow 7 — Pre-Event Prep Email (Scheduled)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "wf7-schedule",
+      "name": "Schedule — Daily at 9 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_events_in_48_hours",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wf7-query-events",
+      "name": "Supabase — Query Events in 48 Hours",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-events-exist",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "wf7-if-events",
+      "name": "IF — Events Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_conversation_pairs_for_event",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_id",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wf7-query-pairs",
+      "name": "Supabase — Query Conversation Pairs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "wf7-split",
+      "name": "Split In Batches — Each Pair",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $json.member_1_email }}",
+        "subject": "Prep for {{ $json.event_title }} — your connection assignment",
+        "emailType": "text",
+        "text": "Hi {{ $json.member_1_name }},\n\n{{ $json.event_title }} is coming up on {{ $json.event_date }}. Here is your connection assignment:\n\nFind and introduce yourself to: {{ $json.member_2_name }}\nAsk them: {{ $json.prompt_question }}\n\nCome prepared to share what you are currently working on. These conversations are how the best professional relationships start.\n\nUnited Scholars Network",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf7-email-member1",
+      "name": "Send Email — To Member 1",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1500, 100],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $json.member_2_email }}",
+        "subject": "Prep for {{ $json.event_title }} — your connection assignment",
+        "emailType": "text",
+        "text": "Hi {{ $json.member_2_name }},\n\n{{ $json.event_title }} is coming up on {{ $json.event_date }}. Here is your connection assignment:\n\nFind and introduce yourself to: {{ $json.member_1_name }}\nAsk them: {{ $json.prompt_question }}\n\nCome prepared to share what you are currently working on. These conversations are how the best professional relationships start.\n\nUnited Scholars Network",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf7-email-member2",
+      "name": "Send Email — To Member 2",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1500, 350],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "wf7-noop",
+      "name": "No Events — Stop",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1000, 450]
+    }
+  ],
+  "connections": {
+    "Schedule — Daily at 9 AM": {
+      "main": [
+        [
+          {
+            "node": "Supabase — Query Events in 48 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase — Query Events in 48 Hours": {
+      "main": [
+        [
+          {
+            "node": "IF — Events Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Events Found": {
+      "main": [
+        [
+          {
+            "node": "Supabase — Query Conversation Pairs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Events — Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase — Query Conversation Pairs": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches — Each Pair",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches — Each Pair": {
+      "main": [
+        [
+          {
+            "node": "Send Email — To Member 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email — To Member 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "USN",
+      "id": "usn-tag"
+    }
+  ]
+}

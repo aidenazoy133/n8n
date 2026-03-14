@@ -1,0 +1,181 @@
+{
+  "name": "USN — Workflow 7B — Welcome Sequence (3-Email Drip)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "welcome-sequence",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "wf7b-webhook",
+      "name": "Webhook — Welcome Sequence",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "welcome-sequence"
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $json.member_email }}",
+        "subject": "Welcome to United Scholars Network, {{ $json.member_name }}",
+        "emailType": "text",
+        "text": "Hi {{ $json.member_name }},\n\nWelcome to United Scholars Network. You are now a member of the {{ $json.class_designation }}.\n\nYour first step: complete your member profile. Add your bio, select your interest tracks, and upload a profile photo. A complete profile helps other members find and connect with you.\n\nLog in at https://unitedscholarsnetwork.org/login\n\nUnited Scholars Network",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf7b-email1",
+      "name": "Send Email 1 — Welcome (Day 1)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [500, 300],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "days"
+      },
+      "id": "wf7b-wait1",
+      "name": "Wait — 2 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $('Webhook — Welcome Sequence').item.json.member_email }}",
+        "subject": "Your opportunities are waiting",
+        "emailType": "text",
+        "text": "Hi {{ $('Webhook — Welcome Sequence').item.json.member_name }},\n\nHave you checked the Opportunity Board yet? We have curated internships, competitions, and programs specifically for members like you.\n\nBrowse opportunities, save the ones that interest you, and start building your shortlist. New opportunities are added every week.\n\nUnited Scholars Network",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf7b-email2",
+      "name": "Send Email 2 — Opportunities (Day 3)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1000, 300],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "days"
+      },
+      "id": "wf7b-wait2",
+      "name": "Wait — 4 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "membership@unitedscholarsnetwork.org",
+        "toEmail": "={{ $('Webhook — Welcome Sequence').item.json.member_email }}",
+        "subject": "One action that makes your membership worth it",
+        "emailType": "text",
+        "text": "Hi {{ $('Webhook — Welcome Sequence').item.json.member_name }},\n\nThe most valuable part of USN is the people in it. Open the Member Directory, find one person who shares your interests, and hit Connect.\n\nOne introduction can change your trajectory. Make it this week.\n\nUnited Scholars Network",
+        "options": {
+          "senderName": "United Scholars Network",
+          "replyTo": "membership@unitedscholarsnetwork.org"
+        }
+      },
+      "id": "wf7b-email3",
+      "name": "Send Email 3 — Connect (Day 7)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1500, 300],
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "USN Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Welcome Sequence": {
+      "main": [
+        [
+          {
+            "node": "Send Email 1 — Welcome (Day 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 1 — Welcome (Day 1)": {
+      "main": [
+        [
+          {
+            "node": "Wait — 2 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait — 2 Days": {
+      "main": [
+        [
+          {
+            "node": "Send Email 2 — Opportunities (Day 3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 2 — Opportunities (Day 3)": {
+      "main": [
+        [
+          {
+            "node": "Wait — 4 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait — 4 Days": {
+      "main": [
+        [
+          {
+            "node": "Send Email 3 — Connect (Day 7)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "USN",
+      "id": "usn-tag"
+    }
+  ]
+}
