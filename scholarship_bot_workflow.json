@@ -49,7 +49,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, tools: [{ type: 'web_search_20250305' }], messages: [{ role: 'user', content: 'Search for currently open scholarships for college students in Computer Science, AI, and data science. Focus on scholarships that: do not require essays, have upcoming deadlines (next 30 days), are open to juniors at US universities, and prioritize first-generation or financial-need students. Return a JSON array of objects with fields: id (unique string), name, url, amount, deadline (YYYY-MM-DD), requirements (array of strings), eligible_majors (array), essay_required (boolean), automatable (boolean - true if the application is a simple online form). Find at least 10 scholarships. Return ONLY the JSON array, no other text.' }] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, tools: [{ type: 'web_search_20250305', name: 'web_search' }], messages: [{ role: 'user', content: 'Search for currently open scholarships for college students in Computer Science, AI, and data science. Focus on scholarships that: do not require essays, have upcoming deadlines (next 30 days), are open to juniors at US universities, and prioritize first-generation or financial-need students. Return a JSON array of objects with fields: id (unique string), name, url, amount, deadline (YYYY-MM-DD), requirements (array of strings), eligible_majors (array), essay_required (boolean), automatable (boolean - true if the application is a simple online form). Find at least 10 scholarships. Return ONLY the JSON array, no other text.' }] }) }}",
         "options": {
           "timeout": 120000
         }
@@ -179,22 +179,18 @@
             {
               "name": "anthropic-version",
               "value": "2023-06-01"
-            },
-            {
-              "name": "anthropic-beta",
-              "value": "computer-use-2025-01-24"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, tools: [{ type: 'computer_20250124', name: 'computer', display_width_px: 1280, display_height_px: 800, display_number: 1 }], messages: [{ role: 'user', content: 'Navigate to ' + $json.url + ' and fill out the scholarship application form with the following information:\\n\\nName: Student Name\\nEmail: ' + $('Get Applicant Profile').item.json.email + '\\nUniversity: State University\\nMajor: Computer Science\\nYear: Junior\\nGPA: 3.8\\n\\nFill in all required fields and submit the form. If you encounter any issues or the form requires information not provided, note what is missing. Return a JSON object with fields: scholarship_id (use \"' + $json.id + '\"), success (boolean), fields_filled (array of field names you filled), error_message (string or null), submitted (boolean).' }] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, tools: [{ type: 'web_search_20250305', name: 'web_search' }], messages: [{ role: 'user', content: 'Visit this scholarship application page: ' + $json.url + '\\n\\nApplicant profile:\\nName: ' + $('Get Applicant Profile').item.json.name + '\\nEmail: ' + $('Get Applicant Profile').item.json.email + '\\nUniversity: ' + $('Get Applicant Profile').item.json.university + '\\nMajor: ' + $('Get Applicant Profile').item.json.major + '\\nYear: ' + $('Get Applicant Profile').item.json.year + '\\nGPA: ' + $('Get Applicant Profile').item.json.gpa + '\\n\\nAnalyze the application page and determine:\\n1. What fields are required?\\n2. Can this application be completed with the provided profile info?\\n3. What is the direct application URL or form link?\\n4. Are there any additional requirements not listed (essays, recommendations, etc.)?\\n\\nReturn ONLY a JSON object (no markdown) with these fields:\\n- scholarship_id: \"' + $json.id + '\"\\n- application_url: the direct URL to apply\\n- can_apply: boolean (true if all requirements are met with profile info)\\n- required_fields: array of field names needed\\n- missing_info: array of any info needed but not in the profile\\n- steps: array of strings describing step-by-step how to apply\\n- error_message: null if OK, string if there is an issue' }] }) }}",
         "options": {
-          "timeout": 180000
+          "timeout": 120000
         }
       },
       "id": "sb-apply",
-      "name": "Apply with Computer Use",
+      "name": "Analyze Application",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [2250, 200],
@@ -207,7 +203,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse the Claude Computer Use response and extract the result JSON\nconst response = $('Apply with Computer Use').item.json;\nconst contentBlocks = response.content || [];\nconst scholarship = $('Split Into Items').item.json;\n\nlet resultText = '';\nfor (const block of contentBlocks) {\n  if (block.type === 'text' && block.text) {\n    resultText += block.text;\n  }\n}\n\nlet result;\ntry {\n  const jsonMatch = resultText.match(/\\{[\\s\\S]*\\}/);\n  result = JSON.parse(jsonMatch ? jsonMatch[0] : resultText);\n} catch (e) {\n  result = {\n    scholarship_id: scholarship.id || 'unknown',\n    success: false,\n    fields_filled: [],\n    error_message: 'Failed to parse Claude response: ' + e.message,\n    submitted: false\n  };\n}\n\n// Merge scholarship info with result\nreturn [{\n  json: {\n    Scholarship_ID: result.scholarship_id || scholarship.id || 'unknown',\n    Scholarship_Name: scholarship.name || 'Unknown',\n    URL: scholarship.url || '',\n    Status: result.submitted ? 'Submitted' : 'Failed',\n    Success: result.success ? 'Yes' : 'No',\n    Submitted: result.submitted ? 'Yes' : 'No',\n    Error_Message: result.error_message || '',\n    Fields_Filled: (result.fields_filled || []).join(', '),\n    Attempt_Date: new Date().toISOString().split('T')[0],\n    Application_Amount: scholarship.amount || '',\n    Deadline: scholarship.deadline || ''\n  }\n}];"
+        "jsCode": "// Parse Claude's analysis response\nconst response = $('Analyze Application').item.json;\nconst contentBlocks = response.content || [];\nconst scholarship = $('Split Into Items').item.json;\n\nlet resultText = '';\nfor (const block of contentBlocks) {\n  if (block.type === 'text' && block.text) {\n    resultText += block.text;\n  }\n}\n\nlet result;\ntry {\n  const jsonMatch = resultText.match(/\\{[\\s\\S]*\\}/);\n  result = JSON.parse(jsonMatch ? jsonMatch[0] : resultText);\n} catch (e) {\n  result = {\n    scholarship_id: scholarship.id || 'unknown',\n    can_apply: false,\n    required_fields: [],\n    missing_info: [],\n    steps: [],\n    error_message: 'Failed to parse Claude response: ' + e.message\n  };\n}\n\nconst canApply = result.can_apply === true;\nreturn [{\n  json: {\n    Scholarship_ID: result.scholarship_id || scholarship.id || 'unknown',\n    Scholarship_Name: scholarship.name || 'Unknown',\n    URL: result.application_url || scholarship.url || '',\n    Status: canApply ? 'Ready to Apply' : 'Needs Review',\n    Success: canApply ? 'Yes' : 'No',\n    Submitted: 'No',\n    Error_Message: result.error_message || (result.missing_info && result.missing_info.length > 0 ? 'Missing: ' + result.missing_info.join(', ') : ''),\n    Fields_Filled: (result.required_fields || []).join(', '),\n    Steps: (result.steps || []).join(' | '),\n    Attempt_Date: new Date().toISOString().split('T')[0],\n    Application_Amount: scholarship.amount || '',\n    Deadline: scholarship.deadline || ''\n  }\n}];"
       },
       "id": "sb-parse-result",
       "name": "Parse Application Result",
@@ -299,7 +295,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 5 second pause for rate limiting\nawait new Promise(resolve => setTimeout(resolve, 5000));\n\n// Pass through current item for aggregation\nreturn [$input.first()];"
+        "jsCode": "// 5 second pause for rate limiting\nawait new Promise(resolve => setTimeout(resolve, 5000));\n\n// Pass through all items for aggregation\nreturn $input.all();"
       },
       "id": "sb-pause",
       "name": "Rate Limit Pause",
@@ -447,14 +443,14 @@
       "main": [
         [
           {
-            "node": "Apply with Computer Use",
+            "node": "Analyze Application",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Apply with Computer Use": {
+    "Analyze Application": {
       "main": [
         [
           {
