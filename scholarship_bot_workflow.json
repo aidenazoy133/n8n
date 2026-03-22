@@ -20,7 +20,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "={{ JSON.stringify({ name: 'Student Name', email: $env.USER_EMAIL, gpa: '3.8', major: 'Computer Science', year: 'Junior', university: 'State University', interests: ['AI', 'machine learning', 'data science'], demographics: { first_generation: true, financial_need: true }, essay_available: false, documents_ready: ['transcript', 'resume'] }) }}"
+        "jsonOutput": "{\"name\": \"Student Name\", \"email\": \"YOUR_EMAIL@example.com\", \"gpa\": \"3.8\", \"major\": \"Computer Science\", \"year\": \"Junior\", \"university\": \"State University\", \"interests\": [\"AI\", \"machine learning\", \"data science\"], \"demographics\": {\"first_generation\": true, \"financial_need\": true}, \"essay_available\": false, \"documents_ready\": [\"transcript\", \"resume\"]}"
       },
       "id": "sb-profile",
       "name": "Get Applicant Profile",
@@ -188,7 +188,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, tools: [{ type: 'computer_20250124', name: 'computer', display_width_px: 1280, display_height_px: 800, display_number: 1 }], messages: [{ role: 'user', content: 'Navigate to ' + $json.url + ' and fill out the scholarship application form with the following information:\\n\\nName: Student Name\\nEmail: ' + $env.USER_EMAIL + '\\nUniversity: State University\\nMajor: Computer Science\\nYear: Junior\\nGPA: 3.8\\n\\nFill in all required fields and submit the form. If you encounter any issues or the form requires information not provided, note what is missing. Return a JSON object with fields: scholarship_id (use \"' + $json.id + '\"), success (boolean), fields_filled (array of field names you filled), error_message (string or null), submitted (boolean).' }] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, tools: [{ type: 'computer_20250124', name: 'computer', display_width_px: 1280, display_height_px: 800, display_number: 1 }], messages: [{ role: 'user', content: 'Navigate to ' + $json.url + ' and fill out the scholarship application form with the following information:\\n\\nName: Student Name\\nEmail: ' + $('Get Applicant Profile').item.json.email + '\\nUniversity: State University\\nMajor: Computer Science\\nYear: Junior\\nGPA: 3.8\\n\\nFill in all required fields and submit the form. If you encounter any issues or the form requires information not provided, note what is missing. Return a JSON object with fields: scholarship_id (use \"' + $json.id + '\"), success (boolean), fields_filled (array of field names you filled), error_message (string or null), submitted (boolean).' }] }) }}",
         "options": {
           "timeout": 180000
         }
@@ -221,7 +221,7 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+          "value": "YOUR_GOOGLE_SHEET_ID"
         },
         "sheetName": {
           "__rl": true,
@@ -279,7 +279,7 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $env.USER_EMAIL }}",
+        "sendTo": "={{ $('Get Applicant Profile').item.json.email }}",
         "subject": "=Scholarship Application Failed: {{ $json.Scholarship_Name }}",
         "emailType": "html",
         "message": "=<h2>Application Failed</h2><p>The automated application for <strong>{{ $json.Scholarship_Name }}</strong> was not successful.</p><p><strong>Error:</strong> {{ $json.Error_Message }}</p><p><strong>URL:</strong> <a href=\"{{ $json.URL }}\">{{ $json.URL }}</a></p><p>Please apply manually before the deadline: {{ $json.Deadline }}</p>",
@@ -319,7 +319,7 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $env.USER_EMAIL }}",
+        "sendTo": "={{ $('Get Applicant Profile').item.json.email }}",
         "subject": "=Daily Scholarship Report: {{ $json.successful }}/{{ $json.total }} Successful",
         "emailType": "html",
         "message": "={{ $json.summaryHtml }}",
@@ -339,7 +339,7 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $env.USER_EMAIL }}",
+        "sendTo": "={{ $('Get Applicant Profile').item.json.email }}",
         "subject": "Scholarship Bot: No Scholarships Found Today",
         "emailType": "html",
         "message": "=<h2>No Scholarships Found</h2><p>The scholarship bot ran on {{ new Date().toISOString().split('T')[0] }} but found no scholarships matching your criteria today.</p><p>The bot will try again tomorrow at 8 AM.</p>",
